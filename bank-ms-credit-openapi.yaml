@@ -1,0 +1,624 @@
+openapi: 3.0.3
+info:
+  title: Bank Credit API
+  version: 1.0.0
+  description: Contract-first API for credits and payments in Phase I.
+servers:
+- url: http://localhost:8080
+  description: Local development
+tags:
+- name: Credits
+- name: Credit Payments
+- name: Credit Queries
+paths:
+  /api/v1/credit:
+    post:
+      tags:
+      - Credits
+      summary: Create credit and initial disbursement
+      operationId: createCredit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreditRequest'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    get:
+      tags:
+      - Credit Queries
+      summary: List or filter credits
+      operationId: findCredits
+      parameters:
+      - name: customerNumber
+        in: query
+        required: false
+        description: Public customer number
+        schema:
+          type: integer
+          format: int64
+      - name: documentType
+        in: query
+        required: false
+        description: Customer document type
+        schema:
+          type: string
+          enum:
+          - DNI
+          - RUC
+          - CE
+          - PASSPORT
+      - name: documentNumber
+        in: query
+        required: false
+        description: Customer document number
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/v1/credit/{creditNumber}:
+    get:
+      tags:
+      - Credit Queries
+      summary: Find credit
+      operationId: findCreditByNumber
+      parameters:
+      - &id001
+        name: creditNumber
+        in: path
+        required: true
+        description: Public credit number
+        schema:
+          type: string
+          pattern: ^CRE-(PER|BUS)-[0-9]{8}-[0-9]{6}$
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    put:
+      tags:
+      - Credits
+      summary: Update allowed credit state
+      operationId: updateCredit
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreditRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    delete:
+      tags:
+      - Credits
+      summary: Close credit
+      operationId: closeCredit
+      parameters:
+      - *id001
+      responses:
+        '204':
+          description: Operation completed successfully
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/v1/credit/{creditNumber}/outstanding-debt:
+    get:
+      tags:
+      - Credit Queries
+      summary: Get outstanding debt
+      operationId: getOutstandingDebt
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Money'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/v1/credit/{creditNumber}/movements:
+    get:
+      tags:
+      - Credit Queries
+      summary: Get credit movements
+      operationId: getCreditMovements
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditMovementResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/v1/credit/{creditNumber}/payments:
+    post:
+      tags:
+      - Credit Payments
+      summary: Pay credit
+      operationId: payCredit
+      parameters:
+      - *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: Consumer-generated idempotency key
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 100
+          example: account-withdrawal-000001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditPaymentRequest'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditMovementResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Business rule conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - timestamp
+      - status
+      - code
+      - message
+      - path
+      - correlationId
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-29T20:30:45Z'
+        status:
+          type: integer
+          format: int32
+          example: 400
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Request validation failed
+        path:
+          type: string
+          example: /api/v1/customer
+        correlationId:
+          type: string
+          example: corr-20261029-000001
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiErrorDetail'
+    ApiErrorDetail:
+      type: object
+      required:
+      - field
+      - reason
+      properties:
+        field:
+          type: string
+          example: documentNumber
+        reason:
+          type: string
+          example: must contain exactly 8 numeric characters
+        rejectedValue:
+          type: string
+          nullable: true
+          example: '123'
+    CustomerDocumentQuery:
+      type: object
+      required:
+      - documentType
+      - documentNumber
+      properties:
+        documentType:
+          type: string
+          enum:
+          - DNI
+          - RUC
+          - CE
+          - PASSPORT
+        documentNumber:
+          type: string
+          pattern: ^[0-9]+$
+          maxLength: 30
+          example: '12345678'
+    Money:
+      type: object
+      required:
+      - amount
+      - currency
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 150.0
+        currency:
+          type: string
+          enum:
+          - PEN
+    CreditType:
+      type: string
+      enum:
+      - PERSONAL
+      - BUSINESS
+    CreditStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - PAID
+      - CLOSED
+    CreditMovementType:
+      type: string
+      enum:
+      - DISBURSEMENT
+      - PAYMENT
+    PaymentSource:
+      type: string
+      enum:
+      - EXTERNAL
+    CreateCreditRequest:
+      type: object
+      required:
+      - customerDocument
+      - creditType
+      - amount
+      properties:
+        customerDocument:
+          $ref: '#/components/schemas/CustomerDocumentQuery'
+        creditType:
+          $ref: '#/components/schemas/CreditType'
+        amount:
+          $ref: '#/components/schemas/Money'
+    UpdateCreditRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - CLOSED
+    CreditResponse:
+      type: object
+      required:
+      - creditNumber
+      - customerNumber
+      - creditType
+      - status
+      - originalAmount
+      - outstandingDebt
+      - createdAt
+      - updatedAt
+      properties:
+        creditNumber:
+          type: string
+          pattern: ^CRE-(PER|BUS)-[0-9]{8}-[0-9]{6}$
+          example: CRE-PER-20261029-000001
+        customerNumber:
+          type: integer
+          format: int64
+        creditType:
+          $ref: '#/components/schemas/CreditType'
+        status:
+          $ref: '#/components/schemas/CreditStatus'
+        originalAmount:
+          $ref: '#/components/schemas/Money'
+        outstandingDebt:
+          $ref: '#/components/schemas/Money'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreditPaymentRequest:
+      type: object
+      required:
+      - amount
+      - paymentSource
+      properties:
+        amount:
+          $ref: '#/components/schemas/Money'
+        paymentSource:
+          $ref: '#/components/schemas/PaymentSource'
+    CreditMovementResponse:
+      type: object
+      required:
+      - operationCode
+      - movementType
+      - amount
+      - debtAfter
+      - occurredAt
+      properties:
+        operationCode:
+          type: string
+          pattern: ^CRE-(DIS|PAY)-[0-9]{8}-[0-9]{6}-[0-9]{6}$
+          example: CRE-PAY-20261029-153045-000001
+        movementType:
+          $ref: '#/components/schemas/CreditMovementType'
+        amount:
+          $ref: '#/components/schemas/Money'
+        debtAfter:
+          $ref: '#/components/schemas/Money'
+        paymentSource:
+          $ref: '#/components/schemas/PaymentSource'
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+  parameters: {}
+  headers: {}

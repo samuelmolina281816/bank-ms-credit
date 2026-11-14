@@ -1,0 +1,130 @@
+{
+  "info": {
+    "_postman_id": "659941df-c43a-4f4f-a09d-ae006b04f4af",
+    "name": "bank-ms-credit - Phase I",
+    "description": "Contract-first checks for credit creation, queries, update, close, and payment. Configure a valid Customer service and PostgreSQL before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8083" },
+    { "key": "customerNumber", "value": "10000001" },
+    { "key": "documentType", "value": "DNI" },
+    { "key": "documentNumber", "value": "12345678" },
+    { "key": "creditNumber", "value": "" },
+    { "key": "idempotencyKey", "value": "postman-payment-0001" }
+  ],
+  "item": [
+    {
+      "name": "Create personal credit",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerDocument\": {\n    \"documentType\": \"{{documentType}}\",\n    \"documentNumber\": \"{{documentNumber}}\"\n  },\n  \"creditType\": \"PERSONAL\",\n  \"amount\": { \"amount\": 1000.00, \"currency\": \"PEN\" }\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/credit"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Created', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json();",
+            "pm.expect(body.creditNumber).to.match(/^CRE-PER-[0-9]{8}-[0-9]{6}$/);",
+            "pm.collectionVariables.set('creditNumber', body.creditNumber);",
+            "pm.collectionVariables.set('customerNumber', String(body.customerNumber));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "List credits",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });",
+        "pm.expect(pm.response.json()).to.be.an('array');"
+      ] } }]
+    },
+    {
+      "name": "List credits by customer number",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit?customerNumber={{customerNumber}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });"
+      ] } }]
+    },
+    {
+      "name": "List credits by customer document",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit?documentType={{documentType}}&documentNumber={{documentNumber}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });"
+      ] } }]
+    },
+    {
+      "name": "Find credit by number",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });"
+      ] } }]
+    },
+    {
+      "name": "Get outstanding debt",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}/outstanding-debt" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });",
+        "pm.expect(pm.response.json().currency).to.eql('PEN');"
+      ] } }]
+    },
+    {
+      "name": "Get credit movements",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}/movements" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });"
+      ] } }]
+    },
+    {
+      "name": "Pay credit",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": { \"amount\": 25.00, \"currency\": \"PEN\" },\n  \"paymentSource\": \"EXTERNAL\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}/payments"
+      },
+      "event": [
+        { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+          "pm.collectionVariables.set('idempotencyKey', 'postman-payment-' + pm.variables.replaceIn('{{$guid}}'));"
+        ] } },
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Created payment movement', function () { pm.response.to.have.status(201); });",
+        "pm.expect(pm.response.json().movementType).to.eql('PAYMENT');"
+        ] } }
+      ]
+    },
+    {
+      "name": "Update credit status to ACTIVE",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{ \"status\": \"ACTIVE\" }" },
+        "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('OK', function () { pm.response.to.have.status(200); });"
+      ] } }]
+    },
+    {
+      "name": "Close credit logically",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/credit/{{creditNumber}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('No content', function () { pm.response.to.have.status(204); });"
+      ] } }]
+    }
+  ]
+}
